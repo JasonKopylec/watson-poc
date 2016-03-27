@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Jason Kopylec - Watson Speech-To-Text Demo</title>
+
+    <link rel="stylesheet" type="text/css" href="css/typeahead.css">
+    <link rel="stylesheet" type="text/css" href="css/bootswatch.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="http://twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+
+</head>
+<body>
+
+<!--  Top navigation bar -->
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">IBM Watson Audio Search Demo</a>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container">
+
+    <!-- Search Bar -->
+    <input id="s" type="text" class="typeahead" placeholder="Search"> <br>
+    Results: <span id="results-count">0</span><br>
+    <br>
+
+    <!-- Search Resuls -->
+    <div id="results" class="list-group"></div>
+
+    <br><br><br><br><br>
+
+    <!-- Bibliography -->
+    <h4>Sources</h4>
+    <a href="http://www.bbc.co.uk/programmes/p02tb8vq/episodes/downloads" target="_blank">BBC World Business Report Podcast</a> - Source audio MP3s<br>
+    <a href="https://bootswatch.com" target="_blank">Bootswatch</a> - Responsive Design, CSS<br>
+    <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/alchemy-language.html" target="_blank">IBM Watson AlchemyLanguage</a>,
+    <!-- This link is required by the Alchemy usage restrictions, see https://www.alchemyapi.com/api/calling-the-api -->
+    <a href="http://www.alchemyapi.com/" target="_blank">Text Analysis by AlchemyAPI</a> - Natural language processing APIs<br>
+    <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/speech-to-text.html" target="_blank">IBM Watson Speech to Text</a> - Audio transcription APIs<br>
+    <a href="http://megaicons.net/iconspack-178/5463/" target="_blank">MegaIcons</a> - Icon library<br>
+    <a href="http://projects.spring.io/spring-boot/" target="_blank">Spring Boot</a> - Web application framework<br>
+    <a href="http://twitter.github.io/typeahead.js/" target="_blank">Typeahead.js</a> - Autocomplete text input<br>
+    <a href="http://underscorejs.org/" target="_blank">Underscore.js</a> - Lightweight UI templates<br><br><br>
+    Author - <a href="https://www.linkedin.com/in/jkopylec" target="_blank">Jason Kopylec</a><br><br><br>
+
+</div>
+
+<!-- Underscore template for rendering items in the result list -->
+<style>
+    .list-group-item table td,th { vertical-align:top; padding:5px;}
+    .keyword { background-color: yellow; }
+</style>
+<script id="template-result" type="template">
+    <div href="#" class="list-group-item">
+        <h4 class="list-group-item-heading">
+            <a href="<%=data.podcast['content-url']%>" target="_blank">
+                <img src="http://megaicons.net/static/img/icons_sizes/8/178/32/file-types-mp3-icon.png">
+                <%=data.podcast.title%>
+            </a>
+        </h4>
+
+        Download:
+        <a href="<%=data.podcast['mp3-url']%>">Audio</a>,
+        <a onclick="Controller.showTranscript(<%=data.podcast.id%>)">Transcript</a>
+
+        <table>
+            <tr>
+                <th>Keywords</th>
+                <th>Entities</th>
+                <th>Concepts</th>
+                <th>Sentiment</th>
+            </tr>
+            <tr>
+                <td>
+                    <% data.podcast.analysis.keywords.forEach(function(keyword) { %>
+                        <% if (data.keywords && keyword.text.toLowerCase().indexOf(data.keywords.toLowerCase())>=0) { %>
+                            <span class="keyword"><%=keyword.text%></span>
+                        <% } else { print(keyword.text) } %>
+                        <br>
+                    <% }); %>
+                </td>
+                <td>
+                    <% data.podcast.analysis.entities.forEach(function(entity) { %>
+                        <% if (data.keywords && entity.text.toLowerCase().indexOf(data.keywords.toLowerCase())>=0) { %>
+                            <span class="keyword"><%=entity.text + "(" + entity.type + ")" %></span>
+                    <% } else { print(entity.text + " (" + entity.type + ")") } %>
+                    <br>
+                    <% }); %>
+                </td>
+                <td>
+                    <% data.podcast.analysis.concepts.forEach(function(concept) { %>
+                        <% if (data.keywords && concept.text.toLowerCase().indexOf(data.keywords.toLowerCase())>=0) { %>
+                            <span class="keyword"><%=concept.text%></span>
+                        <% } else { print(concept.text) } %>
+                        <br>
+                    <% }); %>
+                </td>
+                <td>
+                    <%=data.podcast.analysis.docSentiment.type%> <br>
+                    <% Object.keys(data.podcast.analysis.docEmotions).forEach(function(emotion) { %>
+                    <% if (Number(data.podcast.analysis.docEmotions[emotion]) > .05) print(emotion + "<br>") %>
+                    <% }); %>
+                </td>
+            </tr>
+        </table>
+    </div>
+</script>
+
+<!-- Load podcast data -->
+<script src="js/podcasts.js"></script>
+
+<!-- Load Model-View-Controller application code -->
+<script src="js/app.js"></script>
+
+<!-- Initialize application -->
+<script>
+    // Configure input autocomplete
+    $('#s').typeahead({hint: true, highlight: true, minLength: 1}, {name: 'search', source: Controller.getKeywords, limit: 10});
+    $('#s').on('keyup', function(e) {
+        if(e.which === 13) {
+            $('#s').blur();
+        }
+    });
+
+    // Update results when search input changes
+    $('#s').on("blur", function() { Controller.updateResults($('#s').val()); });
+
+    // Show all results on app start
+    Controller.updateResults('');
+</script>
+
+</body>
+</html>
